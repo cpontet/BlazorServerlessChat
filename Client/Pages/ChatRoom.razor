@@ -26,6 +26,10 @@
     }
 </ul>
 
+<div style="color:red">
+    @ErrorMessage
+</div>
+
 @code {
     private HubConnection hubConnection; //for connecting to SignalR
     private List<ClientMessage> messages = new List<ClientMessage>(); //List of messages to display
@@ -37,19 +41,25 @@
 
     protected override async Task OnInitializedAsync() //actions to do when the page is initialized
     {
-        //create a hub connection to the function app as we'll go via the function for everything SignalR.
-        hubConnection = new HubConnectionBuilder()
-            .WithUrl(functionAppBaseUri)
-            .Build();
-
-        //Registers handler that will be invoked when the hub method with the specified method name is invoked.
-        hubConnection.On<ClientMessage>("clientMessage", (clientMessage) =>
+        try
         {
-            messages.Add(clientMessage);
-            StateHasChanged(); //This tells Blazor that the UI needs to be updated
-        });
+            //create a hub connection to the function app as we'll go via the function for everything SignalR.
+            hubConnection = new HubConnectionBuilder()
+                .WithUrl(functionAppBaseUri)
+                .Build();
 
-        await hubConnection.StartAsync(); //start connection!
+            //Registers handler that will be invoked when the hub method with the specified method name is invoked.
+            hubConnection.On<ClientMessage>("clientMessage", (clientMessage) =>
+            {
+                messages.Add(clientMessage);
+                StateHasChanged(); //This tells Blazor that the UI needs to be updated
+            });
+
+            await hubConnection.StartAsync(); //start connection!
+        }
+        catch (Exception e) {
+            ErrorMessage = e.ToString();
+        }
     }
 
     //send our message to the function app
@@ -70,6 +80,8 @@
     //Check we're connected
     public bool IsConnected =>
         hubConnection.State == HubConnectionState.Connected;
+
+    public string ErrorMessage = "Error";
 
     public class ClientMessage
     {
